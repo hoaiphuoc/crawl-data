@@ -32,8 +32,7 @@ def crawl_news_data(base_url, start_page, total_pages):
         for item in names:
             a_tag = item.find('a')
             if a_tag and "href" in a_tag.attrs:
-                links.append(a_tag["href"].strip())
-                print(a_tag["href"].strip())
+                links.append(a_tag["href"].strip().replace("\t", "").replace("\n", "").replace(" ", ""))
 
         for link in links:
             try:
@@ -45,19 +44,20 @@ def crawl_news_data(base_url, start_page, total_pages):
                 soup = BeautifulSoup(comp_response.content, "html.parser")
 
                 name_tag = soup.find("h1", class_="fs-3 text-capitalize")
-                address_tag = soup.find("div", class_="pb-2 pt-0 ps-3 pe-3 m-0")
-                if not address_tag:
-                    address_tag = soup.find("div", class_="p-2 ps-0 pt-0 m-0")
+                phone_tag = soup.find("div", class_="pb-2 pt-0 ps-3 pe-3 m-0 fs-5") or soup.find("div", class_="p-2 ps-0 pt-0 m-0 fs-5")
+                address_tag = soup.find("div", class_="pb-2 pt-0 ps-3 pe-3 m-0") or soup.find("div", class_="p-2 ps-0 pt-0 m-0")
 
-                if not name_tag or not address_tag:
+                if not name_tag or not phone_tag or not address_tag:
                     print(f"⛔ Skipping {link} due to missing data")
                     continue
 
                 name = name_tag.text.strip()
+                phone = phone_tag.text.strip().replace("\t", "").replace("\n", "").replace(" ", "")
                 address = address_tag.get_text(strip=True)
 
                 all_data.append({
                     "name": name,
+                    "phone": phone,
                     "address": address,
                 })
                 print(f"✅ Crawled: {name}")
@@ -73,7 +73,7 @@ def export_csv(data, filename="companies.csv"):
         return
 
     with open(filename, mode='w', newline='', encoding='utf-8') as file:
-        writer = csv.DictWriter(file, fieldnames=['name', 'address'])
+        writer = csv.DictWriter(file, fieldnames=['name', 'phone','address'])
         writer.writeheader()
         writer.writerows(data)
 
